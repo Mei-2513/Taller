@@ -52,12 +52,83 @@ La configuración está diseñada para proporcionar **seguridad, control de acce
 ---
 
 ## 📂 Archivos Incluidos
-### 📄 `docker-compose.yml`
-- Define la configuración de los servicios y cómo **Traefik** debe interactuar con ellos.
-- Incluye configuraciones de **ruteadores y middlewares** para gestionar el tráfico.
 
-### ⚙️ `traefik.yml`
-- Archivo de configuración de **Traefik** que define los **puntos de entrada**, los **proveedores** y la **habilitación del dashboard**.
+## 📄 docker-compose.yml
+
+Este archivo define y gestiona los servicios dentro del entorno Docker, asegurando la correcta interacción con Traefik.
+
+### 🔹 Servicios Principales:
+
+-Traefik: Proxy inverso que gestiona el tráfico y aplica reglas de enrutamiento.
+
+-API (Node.js): Servicio backend con rutas protegidas y autenticación.
+
+-Nginx: Servidor web para contenido estático.
+
+-Página de Error: Servicio que despliega páginas de error personalizadas en caso de fallos.
+
+🔹 Configuraciones Clave:
+
+Montaje del socket de Docker:
+
+Permite que Traefik detecte y administre dinámicamente los servicios en contenedores.
+
+Configuración clave:
+
+volumes:
+  - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+### Definición de Ruteo:
+
+Se usan etiquetas (labels) en cada servicio para que Traefik pueda descubrir y gestionar el tráfico correctamente.
+
+### Middlewares:
+
+-auth@file: Autenticación básica para servicios protegidos.
+
+-rate-limit@file: Control de tasa de solicitudes para evitar sobrecargas.
+
+-whitelist-admin@file: Restringe el acceso a la ruta /admin solo a IPs autorizadas.
+
+-error-handler@file: Manejo de errores, redirigiendo tráfico a la página personalizada.
+
+### Balanceo de Carga:
+
+Se configuran tres réplicas para la API, asegurando la distribución de tráfico y tolerancia a fallos.
+
+### Manejo de Fallos:
+
+Si la API o Nginx fallan, el tráfico es redirigido automáticamente a la página de error personalizada sin interrumpir la experiencia del usuario.
+
+### ⚙ traefik.yml
+
+Archivo de configuración de Traefik que define los puntos de entrada, proveedores y habilitación del dashboard.
+
+### 🔹 Configuraciones Principales:
+
+Puntos de Entrada:
+
+-web → Puerto 80 (HTTP)
+
+-websecure → Puerto 443 (HTTPS)
+
+### Proveedores:
+
+-docker: Permite que Traefik descubra y gestione servicios automáticamente sin configuración manual.
+
+-file: Habilita la carga de configuraciones adicionales (como middlewares y reglas de ruteo).
+
+Dashboard:
+
+Habilitado en el puerto 8080, accesible para visualizar y monitorear la configuración de Traefik.
+
+### Observación de Archivos:
+
+Traefik detecta cambios en los archivos de configuración y los aplica sin necesidad de reinicio.
+
+### Middlewares Específicos:
+
+Se configuran globalmente en traefik.yml y se referencian en docker-compose.yml para aplicar restricciones de acceso y seguridad.
 
 ---
 
