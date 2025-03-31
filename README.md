@@ -14,7 +14,7 @@ La configuración está diseñada para proporcionar **seguridad, control de acce
 
 ## 🔄 Flujo de Tráfico
 ### 📡 Peticiones HTTP/HTTPS
-1. Un cliente realiza una solicitud a `api.localhost`, `nginx.localhost` o `error.localhost`.
+1. Un usuario realiza una solicitud a `api.localhost`, `nginx.localhost` o `error.localhost`.
 2. **Traefik** recibe la solicitud y la procesa según las reglas de ruteo definidas.
 3. Si la solicitud coincide con una regla de ruteo, **Traefik reenvía la petición al servicio correspondiente**.
 4. Dependiendo de la ruta accedida, se aplican diferentes **middlewares** antes de reenviar la petición al servicio final.
