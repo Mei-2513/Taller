@@ -72,6 +72,7 @@ Los **middlewares** en Traefik son componentes que **permiten modificar las soli
 Un **router** en Traefik se define utilizando **etiquetas (`labels`)** en el archivo `docker-compose.yml`. Los parámetros esenciales son:
 - `traefik.http.routers.<router-name>.rule`: **Define las reglas de enrutamiento** (por ejemplo, `Host("api.localhost")`).
 - `traefik.http.services.<service-name>.loadbalancer.server.port`: **Define el puerto del servicio** al que debe redirigir el tráfico.
+- `traefik.http.routers.<router-name>.middlewares`: Define middlewares aplicables, como autenticación o límite de tráfico.
 
 ### 4️⃣ ¿Cuál es la diferencia entre un router y un servicio en Traefik?
 - Un **router** es responsable de **dirigir el tráfico** hacia un servicio específico según las reglas de enrutamiento definidas.
