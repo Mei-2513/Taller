@@ -31,7 +31,7 @@ La configuración está diseñada para proporcionar **seguridad, control de acce
 
 ## ⚙️ Middlewares Implementados
 ### 🔑 Autenticación Básica (`auth`)
-- Protege los servicios con **Basic Auth**, requiriendo credenciales para acceder.
+- Protege los servicios con **Basic Auth**, requiriendo credenciales para acceder- usuario:usuario y pasword:12345678.
 - Utiliza un archivo **`.htpasswd`** para almacenar las credenciales de usuario.
 - **Si la autenticación es correcta**, el usuario accede al servicio correspondiente.
 - **Si la autenticación falla**, el usuario **no puede salir de la ventana de autenticación** hasta que ingrese credenciales válidas.
