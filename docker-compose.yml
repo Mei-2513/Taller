@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.file.directory=/etc/traefik"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8081:8080"  # Dashboard de Traefik en http://localhost:8081/dashboard/
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./auth:/auth"  # Carpeta con el archivo .htpasswd
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-server
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx.rule=Host(`nginx.localhost`)"
+      - "traefik.http.routers.nginx.entrypoints=websecure"
+      - "traefik.http.routers.nginx.tls=true"
+      - "traefik.http.routers.nginx.middlewares=auth@file,rate-limit@file,error-handler@file"
+      - "traefik.http.services.nginx.loadbalancer.server.port=80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./public:/usr/share/nginx/html
+    restart: always
+
+  api:
+    build: .
+    deploy:
+      replicas: 3  # Tres réplicas del servicio API
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api.localhost`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.routers.api.middlewares=auth@file,rate-limit@file,error-handler@file"
+      - "traefik.http.services.api.loadbalancer.server.port=3000"
+
+      # 🔹 Restricción de IP solo para /admin
+      - "traefik.http.routers.api-admin.rule=Host(`api.localhost`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.api-admin.entrypoints=websecure"
+      - "traefik.http.routers.api-admin.tls=true"
+      - "traefik.http.routers.api-admin.middlewares=auth@file,whitelist-admin@file,rate-limit@file,error-handler@file"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["node", "server.js"]
+    restart: always
+
+  error-page:
+    image: nginx:latest
+    container_name: error-page
+    volumes:
+      - ./errors:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.error.rule=Host(`error.localhost`)"
+      - "traefik.http.services.error.loadbalancer.server.port=80"
+    restart: always
+

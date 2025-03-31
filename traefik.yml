@@ -1,0 +1,99 @@
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+api:
+  dashboard: true
+  insecure: true  # Dashboard en http://localhost:8081/dashboard/
+
+providers:
+  docker:
+    exposedByDefault: false
+  file:
+    directory: "/etc/traefik/"
+    watch: true
+
+log:
+  level: DEBUG
+  filePath: "/var/log/traefik.log"  # Habilitar logs para monitorear el comportamiento
+
+http:
+  middlewares:
+    auth:
+      basicAuth:
+        usersFile: "/auth/.htpasswd"  # Archivo de autenticación
+    rate-limit:
+      rateLimit:
+        average: 1  # Máximo de 1 solicitud por segundo
+        burst: 2    # Picos de hasta 2 solicitudes
+    whitelist-admin:
+      ipWhiteList:
+        sourceRange:
+          - "192.168.1.100/32"  # Reemplaza con la IP permitida
+          - "203.0.113.0/24"    # También puedes permitir rangos de IPs
+          - "10.0.2.15/32"
+    error-handler:
+      errors:
+        status:
+          - "400-599"  # Captura cualquier error en este rango
+        service: "error"
+        query: "/error.html"
+
+  routers:
+    api:
+      rule: "Host(`api.localhost`)"
+      service: "api"
+      entrypoints:
+        - "websecure"
+      tls: true
+      middlewares:
+        - "auth"
+        - "rate-limit"
+        - "error-handler"
+
+    api-admin:
+      rule: "Host(`api.localhost`) && PathPrefix(`/admin`)"
+      service: "api"
+      entrypoints:
+        - "websecure"
+      tls: true
+      middlewares:
+        - "auth"
+        - "whitelist-admin"
+        - "rate-limit"
+        - "error-handler"
+
+    nginx:
+      rule: "Host(`nginx.localhost`)"
+      service: "nginx"
+      entrypoints:
+        - "websecure"
+      tls: true
+      middlewares:
+        - "auth"
+        - "rate-limit"
+        - "error-handler"
+
+    error:
+      rule: "Host(`error.localhost`)"
+      service: "error"
+      entrypoints:
+        - "websecure"
+      tls: true
+
+  services:
+    api:
+      loadBalancer:
+        servers:
+          - url: "http://api:3000"
+    nginx:
+      loadBalancer:
+        servers:
+          - url: "http://nginx:80"
+    error:
+      loadBalancer:
+        servers:
+          - url: "http://error-page:80"
+
