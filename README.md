@@ -1,28 +1,76 @@
 
-# Implementación de Traefik con Ruteadores, Servicios y Middlewares
+Configuración y Flujo de Tráfico en el Proyecto con Traefik
 
-Este proyecto tiene como objetivo demostrar la implementación de **Traefik** en un entorno Dockerizado, configurando ruteadores, servicios y middlewares para manejar el tráfico entre diferentes servicios.
+1. Introducción
 
-## Descripción del Proyecto
+Este proyecto implementa un proxy inverso con Traefik para gestionar el ruteo del tráfico hacia distintos servicios dentro de un entorno Docker. Los servicios principales incluyen:
 
-Este taller permite practicar la configuración de **Traefik** con Docker Compose, creando un entorno de múltiples servicios, incluyendo una API y un servidor estático de Nginx, con la inclusión de middlewares para autenticación básica.
+Traefik (proxy inverso y gestor de ruteo)
 
-## Flujo de Tráfico
+API (Node.js) (servicio de backend con varias rutas protegidas)
 
-### 1. Solicitud del Usuario  
-El proceso comienza cuando el usuario realiza una solicitud en su navegador hacia `http://api.localhost`.
+Nginx (servidor web para contenido estático)
 
-### 2. Traefik Recibe la Solicitud  
-La solicitud llega a Traefik a través del puerto 80, donde Traefik está configurado para escuchar. En este punto, Traefik evalúa la solicitud utilizando el *router* configurado con la regla `Host('api.localhost')`.
+Error Page (servidor de páginas de error personalizado)
 
-### 3. Redirección al Servicio  
-Después de evaluar la solicitud, Traefik redirige el tráfico al servicio correspondiente. En este caso, el tráfico se dirige hacia el servicio de **API**.
+La configuración está diseñada para proporcionar seguridad, control de acceso y balanceo de carga. Además, se han implementado estrategias para manejar fallos de servicios y mejorar la disponibilidad del sistema.
 
-### 4. Aplicación de Middleware  
-Antes de llegar al servicio de la API, Traefik aplica alguno de los middleware configurados. Esto permite que se verifiquen las credenciales del usuario, asegurando que solo los usuarios autorizados puedan acceder al servicio.
+2. Flujo de Tráfico
 
-### 5. Respuesta del Servicio  
-Una vez que el servicio de la API procesa la solicitud, devuelve una respuesta a Traefik. Finalmente, Traefik reenvía esta respuesta al navegador del usuario, completando el ciclo de la solicitud.
+Peticiones HTTP/HTTPS
+
+Un cliente realiza una solicitud a api.localhost, nginx.localhost o error.localhost.
+
+Traefik recibe la solicitud y la procesa según las reglas de ruteo definidas.
+
+Si la solicitud coincide con una regla de ruteo, Traefik reenvía la petición al servicio correspondiente.
+
+Dependiendo de la ruta accedida, se aplican diferentes middlewares antes de reenviar la petición al servicio final.
+
+Si un servicio no está disponible, Traefik puede redirigir la solicitud a la página de error personalizada.
+
+Balanceo de Carga
+
+Para el servicio API, se han configurado tres réplicas, lo que permite distribuir la carga entre ellas mediante Traefik.
+
+Si una instancia de la API falla, las solicitudes se redirigen automáticamente a las instancias restantes.
+
+Manejo de Fallos
+
+Si la API o Nginx dejan de estar disponibles, los clientes reciben una respuesta clara en lugar de un error genérico.
+
+
+3. Middlewares Implementados
+
+Autenticación Básica (auth)
+
+Protege los servicios con Basic Auth, requiriendo credenciales para acceder.
+
+Utiliza un archivo .htpasswd para almacenar las credenciales de usuario.
+
+Si la autenticación es correcta, el usuario accede al servicio correspondiente.
+
+Si la autenticación falla, el usuario no puede salir de la ventana de autenticación hasta que ingrese credenciales válidas.
+
+Límite de Ráfaga (rate-limit)
+
+Restringe el número de peticiones permitidas por segundo.
+
+Configurado para permitir 1 solicitud por segundo y permitir picos de hasta 2 solicitudes.
+
+Si se supera el límite, se devuelve el error 429 Too Many Requests.
+
+Lista Blanca de IPs (whitelist-admin)
+
+Restringe el acceso a la ruta /admin del servicio API.
+
+Solo permite solicitudes desde IPs autorizadas especificadas en la configuración.
+
+Si la IP no está permitida, devuelve un error 403 Forbidden.
+
+Gestor de Errores 
+
+Si un servicio está caído, devuelve automáticamente la página de error en lugar de un fallo sin formato.
 
 ---
 
